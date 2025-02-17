@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flick Gesture Prototype</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Flick Gesture Prototype</h1>
+    <p>Perform flick gestures to activate buttons.</p>
+    <p><strong>Current Orientation:</strong> <span id="orientation">Unknown</span></p>
+    <div id="status">Waiting for gesture...</div>
+    <div class="button-container">
+        <button id="btn1">Horizontal - Single Flick</button>
+        <button id="btn2">Horizontal - Double Flick</button>
+        <button id="btn3">Horizontal - Triple Flick</button>
+        <button id="btn4">Vertical - Single Flick</button>
+        <button id="btn5">Vertical - Double Flick</button>
+    </div>
+    
+    <script>
+        let flickCount = 0;
+        let lastFlickTime = 0;
+        const FLICK_THRESHOLD = 10.5;
+        const TIME_LIMIT = 500; 
+        let currentOrientation = "Unknown";
+
+        function detectOrientation() {
+            if (window.innerWidth > window.innerHeight) {
+                currentOrientation = "Horizontal";
+            } else {
+                currentOrientation = "Vertical";
+            }
+            document.getElementById("orientation").textContent = currentOrientation;
+        }
+
+        function detectFlick(event) {
+            let x = event.acceleration.x;
+            let now = Date.now();
+
+            if (Math.abs(x) > FLICK_THRESHOLD) {
+                if (now - lastFlickTime < TIME_LIMIT) {
+                    flickCount++;
+                } else {
+                    flickCount = 1;
+                }
+                lastFlickTime = now;
+                triggerButton();
+            }
+        }
+
+        function triggerButton() {
+            let status = document.getElementById("status");
+            if (currentOrientation === "Horizontal") {
+                if (flickCount === 1) status.textContent = "Activated: Horizontal - Single Flick";
+                if (flickCount === 2) status.textContent = "Activated: Horizontal - Double Flick";
+                if (flickCount >= 3) status.textContent = "Activated: Horizontal - Triple Flick";
+            } else {
+                if (flickCount === 1) status.textContent = "Activated: Vertical - Single Flick";
+                if (flickCount === 2) status.textContent = "Activated: Vertical - Double Flick";
+            }
+        }
+
+        window.addEventListener("resize", detectOrientation);
+        window.addEventListener("orientationchange", detectOrientation);
+        window.addEventListener("devicemotion", detectFlick);
+
+        detectOrientation();
+    </script>
+</body>
+</html>

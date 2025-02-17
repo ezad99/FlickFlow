@@ -3,8 +3,8 @@ let peak_y = 0;
 let peak_z = 0;
 let count = 0;
 let last_shake = 0;
-let threshold_x = 10.5;
-let threshold_z = 10.5;
+const THRESHOLD_X = 10.5;
+const THRESHOLD_Z = 10.5;
 
 /*
  * Utility function for setting motion value text colour.
@@ -45,13 +45,15 @@ function callbackMotion(event) {
   document.getElementById("peak_y").textContent = roundNumber(peak_y);
   document.getElementById("peak_z").textContent = roundNumber(peak_z);
 
-  // Implement your shake gesture detector here
-  if (Math.abs(x) > 10.5) { // <--- threshold test
+  
+  if (Math.abs(x) > THRESHOLD_X) { // <--- threshold test
     shakeGestureDetected();
     setMotionLabelColor("orangered");
   } else {
     setMotionLabelColor("black");
   }
+  
+  
 }
 
 /*
@@ -111,8 +113,23 @@ function applePermissions() {
 }
 
 /*
+ * Detect device orientation and update UI.
+ */
+function detectOrientation() {
+  let orientationStatus = document.getElementById("orientation_status");
+
+  if (window.innerWidth > window.innerHeight) {
+    orientationStatus.textContent = "Landscape";
+  } else {
+    orientationStatus.textContent = "Portrait";
+  }
+}
+
+/*
  * After the page has loaded, add our device motion event listener.
  */
 window.onload = function onLoad() {
   window.addEventListener("devicemotion", callbackMotion);
+  window.addEventListener("resize", detectOrientation);
+  window.addEventListener("orientationchange", detectOrientation);
 };
