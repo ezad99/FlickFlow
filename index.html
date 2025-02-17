@@ -1,16 +1,15 @@
-<button id="btn6" class="button">Triple Flick (V)</button><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Flick Gesture Prototype</title>
+    <title>Flick FLow Prototype</title>
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
     <h1>Flick Flow Prototype</h1>
     
     <div class="status" id="status">Waiting for gesture...</div>
-    
     
     <div class="sensor-container">
       <div class="live-sensors">
@@ -30,18 +29,28 @@
           <li>Z: <span id="peak_z">0</span></li>
         </ul>
       </div>
-    </div>   
 
-    <h2>Flick Detection</h2>
+    </div>  
+    
+          
+    <div class="orientation-info">
+      <h2>Device Orientation</h2>
+      <p>Beta (Tilt Forward/Backward): <span id="betaValue">0</span>°</p>
+      <p>Gamma (Tilt Left/Right): <span id="gammaValue">0</span>°</p>
+      <p>Current Orientation: <span id="orientationState">Unknown</span></p>
+    </div>
+    
     <button onclick="onClickReset()">Reset</button>
 
+    <h2>Flick Detection</h2>
+
     <div>
-      <button id="btn1" class="button">Single Flick (H)</button>
-      <button id="btn2" class="button">Double Flick (H)</button>
-      <button id="btn3" class="button">Triple Flick (H)</button>
       <button id="singleFlickVertical" class="button">Single Flick (V)</button>
-      <button id="btn5" class="button">Double Flick (V)</button>
-      <button id="btn6" class="button">Triple Flick (V)</button>
+      <button id="singleFlickHorizontal" class="button">Single Flick (H)</button>
+      <button id="doubleFlickVertical" class="button">Double Flick (V)</button>
+      <button id="doubleFlickHorizontal" class="button">Double Flick (H)</button>
+      <button id="tripleFlickVertical" class="button">Triple Flick (V)</button>
+      <button id="tripleFlickHorizontal" class="button">Triple Flick (H)</button>
     </div>
 
     <script src="/flick.js" defer></script>
