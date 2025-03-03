@@ -21,50 +21,63 @@ function setMotionLabelColor(color) {
   }
 }
 
+
+let lastFlickTime = 0;
+const FLICK_TIME_THRESHOLD = 500; 
+let flickState = "waiting"; // "waiting", "single_detected", "double_detected"
+let flickTimeout = null;
+
 function detectSingleFlickVertical(x, y, z) {
-  if (!isLandscape) { // Only detect in portrait mode
-    let button = document.getElementById("singleFlickVertical");
+  if (!isLandscape && Math.abs(y) > VERTICAL_THRESHOLD_Y && Math.abs(z) > VERTICAL_THRESHOLD_Z) {
+    if (flickState !== "waiting") return false; // Ignore if already detected
 
-    if (Math.abs(y) > VERTICAL_THRESHOLD_Y 
-        && Math.abs(z) > VERTICAL_THRESHOLD_Z) {
-      
-      activateButton(button, "Single Flick (Vertical) Detected!");
-      return true;
-    }
+    flickState = "single_detected";
+    lastFlickTime = Date.now();
+
+    activateButton("singleFlickVertical", "Single Flick (Vertical) Detected!");
+
+    setTimeout(() => {
+      flickState = "waiting";
+    }, FLICK_TIME_THRESHOLD);
+
+    return true;
   }
   return false;
 }
 
-
-
-/*
- * Detect a single flick in horizontal position.
- */
 function detectSingleFlickHorizontal(x, y, z) {
-  if (isLandscape) { // Only detect in landscape mode
-    let button = document.getElementById("singleFlickHorizontal");
+  if (isLandscape && Math.abs(x) > HORIZONTAL_THRESHOLD_X && Math.abs(z) > HORIZONTAL_THRESHOLD_Z) {
+    if (flickState !== "waiting") return false;
 
-    if (Math.abs(x) > HORIZONTAL_THRESHOLD_X && Math.abs(z) > HORIZONTAL_THRESHOLD_Z) {
-      activateButton(button, "Single Flick (Horizontal) Detected!");
-      return true;
-    }
+    flickState = "single_detected";
+    lastFlickTime = Date.now();
+
+    activateButton("singleFlickHorizontal", "Single Flick (Horizontal) Detected!");
+
+    setTimeout(() => {
+      flickState = "waiting";
+    }, FLICK_TIME_THRESHOLD);
+
+    return true;
   }
   return false;
 }
 
-/*
- * Generic function to activate a button and update status.
- */
-function activateButton(button, message) {
+
+function activateButton(buttonId, message) {
+  let button = document.getElementById(buttonId); // Get the button element
+  if (!button) return; // Prevent errors if the button is missing
+
   document.getElementById("status").textContent = message;
   document.getElementById("status").style.color = "green";
 
-  button.classList.add("activated");
-  
+  button.classList.add("activated"); // Add class to change color
+
   setTimeout(() => {
-    button.classList.remove("activated");
+    button.classList.remove("activated"); // Remove after 1s
   }, 1000);
 }
+
 
 /*
  * Detect Device Orientation (Landscape or Portrait)
@@ -88,7 +101,7 @@ function checkOrientation(event) {
     isLandscape = true;
     document.getElementById("orientationState").textContent = "Landscape";
   } else if (beta >= -20 && beta <= 20) {
-    document.getElementById("orientationState").textContent = "Face-Up";
+    document.getElementById("orientationState").textContent = "Portrait";
   } else {
     isLandscape = false;
     document.getElementById("orientationState").textContent = "Portrait";
@@ -115,9 +128,8 @@ function callbackMotion(event) {
   document.getElementById("acc_z").textContent = roundNumber(z);
   
   // Detect flicks based on orientation
-  detectSingleFlickHorizontal(x, y, z);
   detectSingleFlickVertical(x, y, z);
-  detectTripleFlickVertical(x, y, z);
+  detectSingleFlickHorizontal(x, y, z);
 
   // Update peak values
   document.getElementById("peak_x").textContent = roundNumber(peak_x);
@@ -132,19 +144,23 @@ function roundNumber(value) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
+function resetPeakValues() {
+  peak_x = 0;
+  peak_y = 0;
+  peak_z = 0;
+  document.getElementById("peak_x").textContent = "0";
+  document.getElementById("peak_y").textContent = "0";
+  document.getElementById("peak_z").textContent = "0";
+}
+
 /*
  * Resets peak values and flick detection.
  */
 function onClickReset() {
-  peak_x = 0;
-  peak_y = 0;
-  peak_z = 0;
-  count = 0;
+  resetPeakValues();
+  flickState = "waiting";
   document.getElementById("status").textContent = "Waiting for gesture...";
   document.getElementById("status").style.color = "black";
-  document.getElementById("peak_x").textContent = "0";
-  document.getElementById("peak_y").textContent = "0";
-  document.getElementById("peak_z").textContent = "0";
 }
 
 /*
