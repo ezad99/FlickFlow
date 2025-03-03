@@ -33,12 +33,12 @@
     </div>  
     
           
-    <div class="orientation-info">
+<!--     <div class="orientation-info">
       <h2>Device Orientation</h2>
       <p>Beta (Tilt Forward/Backward): <span id="betaValue">0</span>°</p>
       <p>Gamma (Tilt Left/Right): <span id="gammaValue">0</span>°</p>
       <p>Current Orientation: <span id="orientationState">Unknown</span></p>
-    </div>
+    </div> -->
     
     <button onclick="onClickReset()">Reset</button>
 
@@ -52,6 +52,10 @@
       <button id="tripleFlickVertical" class="button">Triple Flick (V)</button>
       <button id="tripleFlickHorizontal" class="button">Triple Flick (H)</button>
     </div>
+    
+    <p id="flickTimer">Timer: 0.00s</p>
+    <p id="flickIndicator">Waiting for stage...</p>
+
 
     <script src="/flick.js" defer></script>
   </body>
