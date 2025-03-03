@@ -3,174 +3,60 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Flick Gesture App</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        text-align: center;
-        padding: 20px;
-      }
-      .status {
-        margin-top: 20px;
-        font-size: 20px;
-        font-weight: bold;
-      }
-    </style>
-    <script>
-      let peak_x = 0;
-      let peak_y = 0;
-      let peak_z = 0;
-      let count = 0;
-      let last_shake = 0;
-      let threshold_x = 10.5;
-      let threshold_z = 10.5;
-
-      /*
-       * Utility function for setting motion value text colour.
-       */
-      function setMotionLabelColor(color) {
-        var acc_fields = document.getElementsByClassName('acc');
-        for (var i = 0; i < acc_fields.length; ++i) {
-          var item = acc_fields[i];
-          item.setAttribute('style', 'color: ' + color);
-        }
-      }
-
-      /*
-       * A device motion callback function, which processes accelerometer values.
-       */
-      function callbackMotion(event) {
-        let x = event.acceleration.x;
-        let y = event.acceleration.y;
-        let z = event.acceleration.z;
-
-        if (Math.abs(x) > peak_x) {
-          peak_x = Math.abs(x);
-        }
-
-        if (Math.abs(y) > peak_y) {
-          peak_y = Math.abs(y);
-        }
-
-        if (Math.abs(z) > peak_z) {
-          peak_z = Math.abs(z);
-        }
-
-        document.getElementById("acc_x").textContent = roundNumber(x);
-        document.getElementById("acc_y").textContent = roundNumber(y);
-        document.getElementById("acc_z").textContent = roundNumber(z);
-
-        document.getElementById("peak_x").textContent = roundNumber(peak_x);
-        document.getElementById("peak_y").textContent = roundNumber(peak_y);
-        document.getElementById("peak_z").textContent = roundNumber(peak_z);
-
-        // Implement your shake gesture detector here
-        if (Math.abs(x) > 10.5) { // <--- threshold test
-          shakeGestureDetected();
-          setMotionLabelColor("orangered");
-        } else {
-          setMotionLabelColor("black");
-        }
-      }
-
-    /*
-     * Utility function for rounding a float.
-     */
-    function roundNumber(x) {
-      return Math.round((x + Number.EPSILON) * 100) / 100;
-    }
-
-    /*
-     * Resets peak values and the gesture detection counter.
-     */
-    function onClickReset() {
-      peak_x = 0;
-      peak_y = 0;
-      peak_z = 0;
-      count = 0;
-    }
-
-    /*
-     * Call this function when a gesture has been detected. Will update a text
-     * field shown on the page with the most recent detection time.
-     */
-    let lastShakeTime = 0;
-    const SHAKE_DELAY = 1000;
-
-    function shakeGestureDetected() {
-      let now = new Date();
-      let timestamp = now.getHours() + ":" + now.getMinutes() + ":" + now.getSeconds();
-
-      let currentTime = timeMilliseconds();
-
-      if (now - lastShakeTime < SHAKE_DELAY) {
-        return;
-      }
-
-      lastShakeTime = now;
-
-      document.getElementById("gesture_time").textContent = timestamp;
-      document.getElementById("gesture_count").textContent = ++count;
-    }
-
-    /*
-     * Returns the current time in milliseconds as a number.
-     */
-    function timeMilliseconds() {
-      return Date.now();
-    }
-
-    /*
-     * Asks iOS 13+ users for permission to access device motion data.
-     */
-    function applePermissions() {
-      if (DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === "function") {
-        DeviceMotionEvent.requestPermission();
-      }
-    }
-
-    /*
-     * After the page has loaded, add our device motion event listener.
-     */
-    window.onload = function onLoad() {
-      window.addEventListener("devicemotion", callbackMotion);
-    };
-
-    </script>
+    <title>Flick FLow Prototype</title>
+    <link rel="stylesheet" href="style.css">
   </head>
   <body>
-    <h1>Flick Gesture Detection</h1>
-    <p>Move your device quickly to trigger actions.</p>
-    <div class="status" id="status">Waiting for gesture...</div>
-<!--     <script src="gesture.js"></script> -->
+    <h1>Flick Flow</h1>
     
-     <!-- Live display of sensor values -->
-    <h1> Time in Milliseconds </h1>
-    <span id="timeInMilliseconds">0</span>
-    <h1>Current</h1>
-    <ul>
-      <li>X: <span id="acc_x" class="acc">0</span></li>
-      <li>Y: <span id="acc_y" class="acc">0</span></li>
-      <li>Z: <span id="acc_z" class="acc">0</span></li>
-    </ul>
+    <div class="status" id="status">Waiting for gesture...</div>
+    
+    <div class="sensor-container">
+      <div class="live-sensors">
+        <h2>Live Sensor Values</h2>
+        <ul>
+          <li>X: <span id="acc_x" class="acc">0</span></li>
+          <li>Y: <span id="acc_y" class="acc">0</span></li>
+          <li>Z: <span id="acc_z" class="acc">0</span></li>
+        </ul>
+      </div>
+      
+      <div class="peak-values">
+        <h2>Peak Values</h2>
+        <ul>
+          <li>X: <span id="peak_x">0</span></li>
+          <li>Y: <span id="peak_y">0</span></li>
+          <li>Z: <span id="peak_z">0</span></li>
+        </ul>
+      </div>
 
-    <h1>Peak (absolute)</h1>
-    <ul>
-      <li>X: <span id="peak_x">0</span></li>
-      <li>Y: <span id="peak_y">0</span></li>
-      <li>Z: <span id="peak_z">0</span></li>
-    </ul>
-
-    <h1>Shake Gestures</h1>
-    <ul>
-        <li>Last gesture detected: <span id="gesture_time">None</span></li>
-        <li>Gestures detected: <span id="gesture_count">0</span></li>
-    </ul>
-
-    <!-- Reset the peak values -->
+    </div>  
+    
+          
+<!--     <div class="orientation-info">
+      <h2>Device Orientation</h2>
+      <p>Beta (Tilt Forward/Backward): <span id="betaValue">0</span>°</p>
+      <p>Gamma (Tilt Left/Right): <span id="gammaValue">0</span>°</p>
+      <p>Current Orientation: <span id="orientationState">Unknown</span></p>
+    </div> -->
+    
     <button onclick="onClickReset()">Reset</button>
 
-    <!-- Trigger permissions popup on Apple devices -->
-    <button onclick="applePermissions()">iOS Start</button>
+    <h2>Flick Detection</h2>
+
+    <div>
+      <button id="singleFlickVertical" class="button">Single Flick (V)</button>
+      <button id="singleFlickHorizontal" class="button">Single Flick (H)</button>
+      <button id="doubleFlickVertical" class="button">Double Flick (V)</button>
+      <button id="doubleFlickHorizontal" class="button">Double Flick (H)</button>
+      <button id="tripleFlickVertical" class="button">Triple Flick (V)</button>
+      <button id="tripleFlickHorizontal" class="button">Triple Flick (H)</button>
+    </div>
+    
+    <p id="flickTimer">Timer: 0.00s</p>
+    <p id="flickIndicator">Waiting for stage...</p>
+
+
+    <script src="/flick.js" defer></script>
   </body>
 </html>
