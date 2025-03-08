@@ -88,3 +88,29 @@ h2 {
     margin-bottom: 20px; /* Space between the two lists */
   }
 }
+
+.orientation-info {
+  margin-top: 20px;
+  padding: 10px;
+  font-size: 18px;
+  font-weight: bold;
+  text-align: center;
+  border-radius: 5px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.portrait {
+  background-color: #4CAF50; /* Green for Portrait */
+  color: white;
+}
+
+.landscape {
+  background-color: #FF9800; /* Orange for Landscape */
+  color: white;
+}
+
+.upside-down {
+  background-color: #D32F2F; /* Red for Upside-Down Portrait */
+  color: white;
+}
+

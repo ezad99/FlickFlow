@@ -3,82 +3,113 @@ let peak_y = 0;
 let peak_z = 0;
 let count = 0;
 let last_shake = 0;
-let VERTICAL_THRESHOLD_X = 10;
 let VERTICAL_THRESHOLD_Y = 15;
 let VERTICAL_THRESHOLD_Z = 15;
 let HORIZONTAL_THRESHOLD_X = 5;
-let HORIZONTAL_THRESHOLD_Y = 3;
 let HORIZONTAL_THRESHOLD_Z = 10;
 let isLandscape = false; // Track device orientation
 
-/*
- * Utility function for setting motion value text color.
- */
-function setMotionLabelColor(color) {
-  let acc_fields = document.getElementsByClassName("acc");
-  for (let i = 0; i < acc_fields.length; ++i) {
-    acc_fields[i].style.color = color;
-  }
-}
 
 // Timer Variables
 let flickStartTime = 0;
 let timerInterval = null;
-const MIN_TIME_BETWEEN_FLICKS = 500; 
+const MIN_TIME_BETWEEN_FLICKS = 500;
+const FINISH_TIME = 500;
 
 
 // Constants for single flick
 let lastFlickTime = 0;
 const FLICK_TIME_THRESHOLD = 1000; 
-let flickState = "waiting"; // "waiting", "single_detected", "double_detected", "finished"
+let flickState = "idle"; // "idle", "single_detected", "double_detected", "finished"
 
 // Constants for double flick
-const DOUBLE_FLICK_TIME_THRESHOLD = 10000; // Max time between two flicks
+const DOUBLE_FLICK_TIME_THRESHOLD = 2000; // Max time between two flicks
 let lastSingleFlickTime = 0;
 
+// Constants for triple flick
+const TRIPLE_FLICK_TIME_THRESHOLD = 3000; // Max time between three flicks
+let lastDoubleFlickTime = 0;
+
+
 /**
- * Starts the flick timer display.
+ * Updates flick thresholds.
  */
-function startFlickTimer() {
+function updateThresholds() {
+  const DECAY_FACTOR = 0.5; // 50% decrease per update
+  const MIN_VERTICAL_THRESHOLD_Y = 15;
+  const MIN_VERTICAL_THRESHOLD_Z = 15;
+  const MIN_HORIZONTAL_THRESHOLD_X = 5;
+  const MIN_HORIZONTAL_THRESHOLD_Z = 10;
+
+  // Apply decay to old threshold values, ensuring they don't drop below their initial values
+  VERTICAL_THRESHOLD_Y = Math.max((VERTICAL_THRESHOLD_Y * DECAY_FACTOR), MIN_VERTICAL_THRESHOLD_Y, peak_y * 0.20);
+  VERTICAL_THRESHOLD_Z = Math.max((VERTICAL_THRESHOLD_Z * DECAY_FACTOR),  MIN_VERTICAL_THRESHOLD_Z, peak_z * 0.20);
+  HORIZONTAL_THRESHOLD_X = Math.max((HORIZONTAL_THRESHOLD_X * DECAY_FACTOR),  MIN_HORIZONTAL_THRESHOLD_X, peak_x * 0.20);
+  HORIZONTAL_THRESHOLD_Z = Math.max((HORIZONTAL_THRESHOLD_Z * DECAY_FACTOR), MIN_HORIZONTAL_THRESHOLD_Z, peak_z * 0.20);
+
+  console.log("Updated Thresholds:");
+  console.log(`VERTICAL_THRESHOLD_Y: ${VERTICAL_THRESHOLD_Y}`);
+  console.log(`VERTICAL_THRESHOLD_Z: ${VERTICAL_THRESHOLD_Z}`);
+  console.log(`HORIZONTAL_THRESHOLD_X: ${HORIZONTAL_THRESHOLD_X}`);
+  console.log(`HORIZONTAL_THRESHOLD_Z: ${HORIZONTAL_THRESHOLD_Z}`);
+}
+
+
+
+/**
+ * Starts a countdown timer for the next flick.
+ */
+function startFlickTimer(duration) {
   flickStartTime = Date.now();
   const flickTimer = document.getElementById("flickTimer");
 
   if (timerInterval) clearInterval(timerInterval); // Reset existing timer
 
   timerInterval = setInterval(() => {
-    let elapsedTime = (Date.now() - flickStartTime) / 1000; // Convert to seconds
-    flickTimer.textContent = `Timer: ${elapsedTime.toFixed(2)}s`;
+    let remainingTime = duration - (Date.now() - flickStartTime); // Time left in ms
+
+    if (remainingTime <= 0) {
+      clearInterval(timerInterval);
+      flickTimer.textContent = "Time remaining: 0.00s";
+      return;
+    }
+
+    flickTimer.textContent = `Time remaining for next flick: ${(remainingTime / 1000).toFixed(2)}s`;
   }, 50);
 }
 
 /**
- * Stops and clears the flick timer display.
+ * Stops and clears the flick countdown timer.
  */
 function stopFlickTimer() {
   clearInterval(timerInterval);
-  document.getElementById("flickTimer").textContent = "Timer: 0.00s";
+  document.getElementById("flickTimer").textContent = "Time remaining: 0.00s";
 }
 
 // Flick State Indicator
-function updateFlickIndicator() {
-  let flickIndicator = document.getElementById("flickIndicator");
+function updateState() {
+  let state = document.getElementById("status");
 
   switch (flickState) {
-    case "waiting":
-      flickIndicator.textContent = "Waiting for stage...";
-      flickIndicator.style.color = "black";
+    case "idle":
+      state.textContent = "Idle..";
+      state.style.color = "black";
       break;
     case "single_detected":
-      flickIndicator.textContent = "Single Flick Detected!";
-      flickIndicator.style.color = "orange";
+      state.textContent = "Single Vertical Flick Detected!";
+      state.style.color = "purple";
       break;
     case "double_detected":
-      flickIndicator.textContent = "Double Flick Detected!";
-      flickIndicator.style.color = "green";
+      state.textContent = "Double Vertical Flick Detected!";
+      state.style.color = "red";
+      break;
+    case "triple_detected":
+      state.textContent = "Triple Vertical Flick Detected!";
+      state.style.color = "orange";
       break;
     case "finished":
-      flickIndicator.textContent = "Detection Finished";
-      flickIndicator.style.color = "blue";
+      state.textContent = "Detection Finished";
+      state.style.color = "blue";
       break;
   }
 }
@@ -97,6 +128,13 @@ function detectDoubleFlickVertical() {
   return flickState === "single_detected" && (Date.now() - lastSingleFlickTime <= DOUBLE_FLICK_TIME_THRESHOLD);
 }
 
+/**
+ * Detects a triple flick in the vertical direction.
+ */
+function detectTripleFlickVertical() {
+  return flickState === "double_detected" && (Date.now() - lastDoubleFlickTime <= TRIPLE_FLICK_TIME_THRESHOLD);
+}
+
 let waitingForDouble = false; // Flag to prevent instant double flick detection
 
 /**
@@ -106,19 +144,21 @@ function handleVerticalFlick(y, z) {
   if (detectSingleFlickVertical(y, z)) {
     const currentTime = Date.now();
 
-    if (flickState === "waiting") {
+    if (flickState === "idle") {
       // First flick detected
       flickState = "single_detected";
       lastSingleFlickTime = currentTime;
       activateButton("singleFlickVertical", "Single Flick (Vertical) Detected!");
-      startFlickTimer();
-      updateFlickIndicator();
+      startFlickTimer(DOUBLE_FLICK_TIME_THRESHOLD);
+      updateState();
+      updateThresholds();
 
-      // Wait for possible second flick
+      // Set timeout to transition to "finished" if no second flick occurs
       setTimeout(() => {
         if (flickState === "single_detected") {
-          flickState = "finished"; // Move to "finished" stage if no double flick happens
+          flickState = "finished"; // Move to "finished" state if no second flick happens
           stopFlickTimer();
+          updateState();
           resetFlickDetection();
         }
       }, DOUBLE_FLICK_TIME_THRESHOLD);
@@ -126,56 +166,170 @@ function handleVerticalFlick(y, z) {
     else if (flickState === "single_detected") {
       // Prevent instant double flick detection
       if (currentTime - lastSingleFlickTime < MIN_TIME_BETWEEN_FLICKS) {
-        return; // Ignore too-close flicks
+        return; // Ignore flicks that happen too quickly
       }
+
       // Ensure the second flick is within time limit
       if (currentTime - lastSingleFlickTime <= DOUBLE_FLICK_TIME_THRESHOLD) {
         flickState = "double_detected";
+        lastDoubleFlickTime = currentTime;
         activateButton("doubleFlickVertical", "Double Flick (Vertical) Detected!");
         stopFlickTimer();
-        updateFlickIndicator();
+        updateState();
+        updateThresholds();
+
+        // Start timer for triple flick
+        startFlickTimer(TRIPLE_FLICK_TIME_THRESHOLD);
+
+        // After detecting double flick, transition to "finished" after a short delay
+        setTimeout(() => {
+          if (flickState === "double_detected") {
+            flickState = "finished";
+            updateState();
+            resetFlickDetection();
+          }
+        }, TRIPLE_FLICK_TIME_THRESHOLD);
+      }
+    } 
+    else if (flickState === "double_detected") {
+      // Prevent instant triple flick detection
+      if (currentTime - lastDoubleFlickTime < MIN_TIME_BETWEEN_FLICKS) {
+        return; // Ignore flicks that happen too quickly
       }
 
-      // Move to "finished" stage before full reset
-      setTimeout(() => {
-        flickState = "finished";
-        resetFlickDetection();
-      }, FLICK_TIME_THRESHOLD);
+      // Ensure the third flick is within time limit
+      if (currentTime - lastDoubleFlickTime <= TRIPLE_FLICK_TIME_THRESHOLD) {
+        flickState = "triple_detected";
+        activateButton("tripleFlickVertical", "Triple Flick (Vertical) Detected!");
+        stopFlickTimer();
+        updateState();
+        updateThresholds();
+
+        // After detecting triple flick, transition to "finished" after a short delay
+        setTimeout(() => {
+          flickState = "finished";
+          updateState();
+          resetFlickDetection();
+        }, FLICK_TIME_THRESHOLD);
+      }
     }
   }
 }
 
 
+
 /**
- * Resets flick detection properly after a flick sequence ends.
+ * Resets flick detection after showing "finished" state for a duration.
  */
 function resetFlickDetection() {
   if (flickState === "finished") {
-    flickState = "waiting"; // Fully reset for new flicks
-    document.getElementById("status").textContent = "Waiting for gesture...";
-    document.getElementById("status").style.color = "black";
-    updateFlickIndicator(); // Reset indicator
+    setTimeout(() => {
+      flickState = "idle"; // Reset after a 
+      document.getElementById("status").textContent = "Idle..";
+      document.getElementById("status").style.color = "black";
+      updateState();
+    }, FINISH_TIME); 
   }
 }
 
+/**
+ * Detects a single flick in the horizontal direction.
+ */
+function detectSingleFlickHorizontal(x, z) {
+  return isLandscape && Math.abs(x) > HORIZONTAL_THRESHOLD_X && Math.abs(z) > HORIZONTAL_THRESHOLD_Z;
+}
 
-function detectSingleFlickHorizontal(x, y, z) {
-  if (isLandscape && Math.abs(x) > HORIZONTAL_THRESHOLD_X && Math.abs(z) > HORIZONTAL_THRESHOLD_Z) {
-    if (flickState !== "waiting") return false;
+/**
+ * Detects a double flick in the horizontal direction.
+ */
+function detectDoubleFlickHorizontal() {
+  return flickState === "single_detected" && (Date.now() - lastSingleFlickTime <= DOUBLE_FLICK_TIME_THRESHOLD);
+}
 
-    flickState = "single_detected";
-    lastFlickTime = Date.now();
-    updateFlickIndicator();
+/**
+ * Detects a triple flick in the horizontal direction.
+ */
+function detectTripleFlickHorizontal() {
+  return flickState === "double_detected" && (Date.now() - lastDoubleFlickTime <= TRIPLE_FLICK_TIME_THRESHOLD);
+}
 
-    activateButton("singleFlickHorizontal", "Single Flick (Horizontal) Detected!");
+/**
+ * Handles single, double, and triple flick detection for horizontal motion.
+ */
+function handleHorizontalFlick(x, z) {
+  if (detectSingleFlickHorizontal(x, z)) {
+    const currentTime = Date.now();
 
-    setTimeout(() => {
-      flickState = "waiting";
-    }, FLICK_TIME_THRESHOLD);
+    if (flickState === "idle") {
+      // First flick detected
+      flickState = "single_detected";
+      lastSingleFlickTime = currentTime;
+      activateButton("singleFlickHorizontal", "Single Flick (Horizontal) Detected!");
+      startFlickTimer(DOUBLE_FLICK_TIME_THRESHOLD);
+      updateState();
+      updateThresholds();
 
-    return true;
+      // Set timeout to transition to "finished" if no second flick occurs
+      setTimeout(() => {
+        if (flickState === "single_detected") {
+          flickState = "finished"; // Move to "finished" state if no second flick happens
+          stopFlickTimer();
+          updateState();
+          resetFlickDetection();
+        }
+      }, DOUBLE_FLICK_TIME_THRESHOLD);
+    } 
+    else if (flickState === "single_detected") {
+      // Prevent instant double flick detection
+      if (currentTime - lastSingleFlickTime < MIN_TIME_BETWEEN_FLICKS) {
+        return; // Ignore flicks that happen too quickly
+      }
+
+      // Ensure the second flick is within time limit
+      if (currentTime - lastSingleFlickTime <= DOUBLE_FLICK_TIME_THRESHOLD) {
+        flickState = "double_detected";
+        lastDoubleFlickTime = currentTime;
+        activateButton("doubleFlickHorizontal", "Double Flick (Horizontal) Detected!");
+        stopFlickTimer();
+        updateState();
+        updateThresholds();
+
+        // Start timer for triple flick
+        startFlickTimer(TRIPLE_FLICK_TIME_THRESHOLD);
+
+        // After detecting double flick, transition to "finished" after a short delay
+        setTimeout(() => {
+          if (flickState === "double_detected") {
+            flickState = "finished";
+            updateState();
+            resetFlickDetection();
+          }
+        }, TRIPLE_FLICK_TIME_THRESHOLD);
+      }
+    } 
+    else if (flickState === "double_detected") {
+      // Prevent instant triple flick detection
+      if (currentTime - lastDoubleFlickTime < MIN_TIME_BETWEEN_FLICKS) {
+        return; // Ignore flicks that happen too quickly
+      }
+
+      // Ensure the third flick is within time limit
+      if (currentTime - lastDoubleFlickTime <= TRIPLE_FLICK_TIME_THRESHOLD) {
+        flickState = "triple_detected";
+        activateButton("tripleFlickHorizontal", "Triple Flick (Horizontal) Detected!");
+        stopFlickTimer();
+        updateState();
+        updateThresholds();
+
+        // After detecting triple flick, transition to "finished" after a short delay
+        setTimeout(() => {
+          flickState = "finished";
+          updateState();
+          resetFlickDetection();
+        }, FLICK_TIME_THRESHOLD);
+      }
+    }
   }
-  return false;
 }
 
 
@@ -200,28 +354,28 @@ function activateButton(buttonId, message) {
 function checkOrientation(event) {
   let beta = event.beta || 0;   // Front-back tilt (-180 to 180)
   let gamma = event.gamma || 0; // Left-right tilt (-90 to 90)
-  
-  // Update displayed values
-  document.getElementById("betaValue").textContent = roundNumber(beta);
-  document.getElementById("gammaValue").textContent = roundNumber(gamma);
+  let orientationElement = document.getElementById("orientationState");
 
-  // Detect orientation
   if (beta > 45 && beta < 135) {
     isLandscape = false;
-    document.getElementById("orientationState").textContent = "Portrait";
+    orientationElement.textContent = "Portrait";
+    orientationElement.style.color = "blue"; // Portrait -> Blue
   } else if (beta < -45 && beta > -135) {
     isLandscape = false;
-    document.getElementById("orientationState").textContent = "Upside-Down Portrait";
+    orientationElement.textContent = "Upside-Down Portrait";
+    orientationElement.style.color = "red"; // Upside-down -> Red
   } else if (Math.abs(gamma) > 25) {
     isLandscape = true;
-    document.getElementById("orientationState").textContent = "Landscape";
-  } else if (beta >= -20 && beta <= 20) {
-    document.getElementById("orientationState").textContent = "Portrait";
+    orientationElement.textContent = "Landscape";
+    orientationElement.style.color = "green"; // Landscape -> Green
   } else {
     isLandscape = false;
-    document.getElementById("orientationState").textContent = "Portrait";
+    orientationElement.textContent = "Portrait";
+    orientationElement.style.color = "blue"; // Default -> Blue
   }
 }
+
+
 
 
 /*
@@ -244,7 +398,7 @@ function callbackMotion(event) {
   
   // Detect flicks based on orientation
   handleVerticalFlick(y, z);
-  detectSingleFlickHorizontal(x, y, z);
+  handleHorizontalFlick(x, z);
 
   // Update peak values
   document.getElementById("peak_x").textContent = roundNumber(peak_x);
@@ -259,24 +413,25 @@ function roundNumber(value) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-function resetPeakValues() {
-  peak_x = 0;
-  peak_y = 0;
-  peak_z = 0;
-  document.getElementById("peak_x").textContent = "0";
-  document.getElementById("peak_y").textContent = "0";
-  document.getElementById("peak_z").textContent = "0";
-}
 
 /*
  * Resets peak values and flick detection.
  */
 function onClickReset() {
-  resetPeakValues();
   flickState = "waiting";
   document.getElementById("status").textContent = "Waiting for gesture...";
   document.getElementById("status").style.color = "black";
 }
+
+/*
+ * Asks iOS 13+ users for permission to access device motion data.
+ */
+function applePermissions() {
+  if (DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === "function") {
+    DeviceMotionEvent.requestPermission();
+  }
+}
+
 
 /*
  * Start event listeners on page load.
@@ -288,5 +443,5 @@ window.onload = function onLoad() {
   } else {
     console.log("Device orientation not supported.");
   }
-    updateFlickIndicator();
+    updateState();
 };
