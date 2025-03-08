@@ -9,10 +9,12 @@
   <body>
     <h1>Flick Flow</h1>
     
-    <div class="status" id="status">Waiting for gesture...</div>
+    <div class="status" id="status">Idle..</div>
+    <div id="flickTimer">Time remaining: 0.00s</div>
+
     
-    <div class="sensor-container">
-      <div class="live-sensors">
+    <div class="sensor-container" hidden>
+      <div class="live-sensors" hidden>
         <h2>Live Sensor Values</h2>
         <ul>
           <li>X: <span id="acc_x" class="acc">0</span></li>
@@ -21,7 +23,7 @@
         </ul>
       </div>
       
-      <div class="peak-values">
+      <div class="peak-values" hidden>
         <h2>Peak Values</h2>
         <ul>
           <li>X: <span id="peak_x">0</span></li>
@@ -29,18 +31,13 @@
           <li>Z: <span id="peak_z">0</span></li>
         </ul>
       </div>
-
-    </div>  
-    
-          
-<!--     <div class="orientation-info">
+    </div> 
+               
+    <div class="orientation-info">
       <h2>Device Orientation</h2>
-      <p>Beta (Tilt Forward/Backward): <span id="betaValue">0</span>°</p>
-      <p>Gamma (Tilt Left/Right): <span id="gammaValue">0</span>°</p>
       <p>Current Orientation: <span id="orientationState">Unknown</span></p>
-    </div> -->
-    
-    <button onclick="onClickReset()">Reset</button>
+    </div> 
+
 
     <h2>Flick Detection</h2>
 
@@ -53,8 +50,10 @@
       <button id="tripleFlickHorizontal" class="button">Triple Flick (H)</button>
     </div>
     
-    <p id="flickTimer">Timer: 0.00s</p>
-    <p id="flickIndicator">Waiting for stage...</p>
+    
+    <!-- Trigger permissions popup on Apple devices -->
+    <button onclick="applePermissions()">iOS Start</button>
+    
 
 
     <script src="/flick.js" defer></script>
